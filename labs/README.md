@@ -12,6 +12,7 @@
   - [Network Setup - VPCs, Internet GWs, and Subnets](#network-setup---vpcs-internet-gws-and-subnets)
   - [Network Setup - Multi-Region VPC Peering](#network-setup---multi-region-vpc-peering)
   - [Network Setup - Security Groups](#network-setup---security-groups)
+  - [Using Data Source (SSM Parameter Store) to Fetch AMI IDs](#using-data-source-ssm-parameter-store-to-fetch-ami-ids)
 
 ## About
 
@@ -438,4 +439,43 @@ terraform validate
 ``` BASH
 terraform plan
 terraform apply --auto-approve
+```
+
+## Using Data Source (SSM Parameter Store) to Fetch AMI IDs
+
+- Create the `instances.tf` file to define the `data` source for the AMI ID
+
+``` Python
+# Get Linux AMI ID using SSM Parameter endpoint in us-east-1
+data "aws_ssm_parameter" "linuxAmi" {
+  provider = aws.region-master
+  name     = "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+}
+
+# Get Linux AMI ID using SSM Parameter endpoint in us-west-2
+data "aws_ssm_parameter" "linuxAmiOregon" {
+  provider = aws.region-worker
+  name     = "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+}
+```
+
+- Format and Validate
+
+``` bash
+terraform fmt
+terraform validate
+```
+
+- Plan and Apply
+
+``` bash
+terraform plan
+terraform apply
+```
+
+- Validate AMI ID in remote state
+
+``` bash
+aws s3 cp s3://sandbox-terraform-backend-542056542192/terraformstatefile .
+cat terraformstatefile | grep ami
 ```
