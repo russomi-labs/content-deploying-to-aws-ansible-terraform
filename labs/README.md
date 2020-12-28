@@ -348,7 +348,7 @@ resource "aws_security_group" "lb-sg" {
 
 - Create the `jenkins-sg` that allowing TCP/8080 from * and TCP/22 from your IP in us-east-1
 
-``` python
+``` Python
 resource "aws_security_group" "jenkins-sg" {
   provider    = aws.region-master
   name        = "jenkins-sg"
@@ -437,5 +437,5 @@ terraform validate
 
 ``` BASH
 terraform plan
-terraform apply
+terraform apply --auto-approve
 ```
