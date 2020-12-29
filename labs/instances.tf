@@ -33,6 +33,15 @@ resource "aws_instance" "jenkins-master" {
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.jenkins-sg.id]
   subnet_id                   = aws_subnet.subnet_1.id
+  # The code below is ONLY the provisioner block which needs to be
+  # inserted inside the resource block for Jenkins EC2 master Terraform
+  # Jenkins Master Provisioner:
+  provisioner "local-exec" {
+    command = <<EOF
+aws --profile ${var.profile} ec2 wait instance-status-ok --region ${var.region-master} --instance-ids ${self.id}
+ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ansible_templates/jenkins-master-sample.yml
+EOF
+  }
 
   tags = {
     Name = "jenkins_master_tf"
@@ -50,6 +59,14 @@ resource "aws_instance" "jenkins-worker-oregon" {
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.jenkins-sg-oregon.id]
   subnet_id                   = aws_subnet.subnet_1_oregon.id
+  # The code below is ONLY the provisioner block which needs to be
+  # inserted inside the resource block for Jenkins EC2 worker in Terraform
+  provisioner "local-exec" {
+    command = <<EOF
+aws --profile ${var.profile} ec2 wait instance-status-ok --region ${var.region-worker} --instance-ids ${self.id}
+ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ansible_templates/jenkins-worker-sample.yml
+EOF
+  }
 
   tags = {
     Name = join("_", ["jenkins_worker_tf", count.index + 1])

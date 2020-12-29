@@ -15,6 +15,7 @@
   - [Using Data Source (SSM Parameter Store) to Fetch AMI IDs](#using-data-source-ssm-parameter-store-to-fetch-ami-ids)
   - [Deploying Key Pairs for App Nodes](#deploying-key-pairs-for-app-nodes)
   - [Deploying Jenkins Master and Worker Instances](#deploying-jenkins-master-and-worker-instances)
+  - [Configuring Terraform Provisioners for Config Management via Ansible](#configuring-terraform-provisioners-for-config-management-via-ansible)
 
 ## About
 
@@ -602,4 +603,88 @@ ssh ec2-user@{Jenkins-Worker-Public-IPs}
 
 ``` BASH
 terraform destroy
+```
+
+## Configuring Terraform Provisioners for Config Management via Ansible
+
+- Bootstrapping Infrastructure via Terraform Providers
+  - Create and Destroy time provisioners
+  - If a provisioner fails to run for a resource, it is marked as tainted
+  - Provisioners can run commands locally or remotely (using SSH or WinRM)
+    - Local provisioners run on the same system where Terraform commands are invoked
+
+- Configure `ansible.cfg`
+
+``` text
+inventory       = ./ansible_templates/inventory_aws/tf_aws_ec2.yml
+enable_plugins = aws_ec2
+interpreter_python = auto_silent
+```
+
+- jenkins-master-sample.yml
+
+``` yaml
+# Ansible Jenkins Master, sample playbook - jenkins-master-sample.yml
+---
+
+- hosts: "{{ passed_in_hosts }}"
+
+  become: yes
+  remote_user: ec2-user
+  become_user: root
+  tasks:
+
+    - name: install Git client
+
+      yum:
+        name: git
+        state: present
+
+```
+
+- jenkins-worker-sample.yml
+
+``` yaml
+# Ansible Jenkins Worker, sample playbook - jenkins-worker-sample.yml
+---
+
+- hosts: "{{ passed_in_hosts }}"
+
+  become: yes
+  remote_user: ec2-user
+  become_user: root
+  tasks:
+
+    - name: install jq, JSON parser
+
+      yum:
+        name: jq
+        state: present
+```
+
+- Jenkins Master - Adding terraform provisioners to `instances.tf`
+
+``` python
+  # The code below is ONLY the provisioner block which needs to be
+  # inserted inside the resource block for Jenkins EC2 master Terraform
+  # Jenkins Master Provisioner:
+  provisioner "local-exec" {
+    command = <<EOF
+aws --profile ${var.profile} ec2 wait instance-status-ok --region ${var.region-master} --instance-ids ${self.id}
+ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ansible_templates/jenkins-master-sample.yml
+EOF
+  }
+```
+
+- Jenkins Worker - Adding terraform provisioners to `instances.tf`
+
+``` python
+  # The code below is ONLY the provisioner block which needs to be
+  # inserted inside the resource block for Jenkins EC2 worker in Terraform
+  provisioner "local-exec" {
+    command = <<EOF
+aws --profile ${var.profile} ec2 wait instance-status-ok --region ${var.region-worker} --instance-ids ${self.id}
+ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ansible_templates/jenkins-worker-sample.yml
+EOF
+  }
 ```
