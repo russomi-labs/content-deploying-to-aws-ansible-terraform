@@ -688,3 +688,15 @@ ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ansib
 EOF
   }
 ```
+
+- Terraform fmt, validate, plan, and apply
+
+``` BASH
+terraform fmt
+terraform validate
+terraform plan
+terraform apply
+```
+
+- Review output to validate provisioning by Ansible
+- SSH into the instances to validate the tools were installed
