@@ -16,6 +16,7 @@
   - [Deploying Key Pairs for App Nodes](#deploying-key-pairs-for-app-nodes)
   - [Deploying Jenkins Master and Worker Instances](#deploying-jenkins-master-and-worker-instances)
   - [Configuring Terraform Provisioners for Config Management via Ansible](#configuring-terraform-provisioners-for-config-management-via-ansible)
+  - [Creating an ALB and Routing Traffic to EC2 App Node](#creating-an-alb-and-routing-traffic-to-ec2-app-node)
 
 ## About
 
@@ -700,3 +701,6 @@ terraform apply
 
 - Review output to validate provisioning by Ansible
 - SSH into the instances to validate the tools were installed
+
+## Creating an ALB and Routing Traffic to EC2 App Node
+
